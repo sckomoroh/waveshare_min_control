@@ -1,0 +1,6 @@
+    // Motors command:
+    // Move robot
+    {"CmdID": 60, "Params": {"L": 60, "R": -10}}
+
+    // Stop robot
+    {"CmdID": 61}
