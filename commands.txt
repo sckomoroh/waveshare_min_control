@@ -1,6 +1,12 @@
-    // Motors command:
     // Move robot
-    {"CmdID": 60, "Params": {"L": 60, "R": -10}}
+    {"CmdID": 60, "Params": {"L": 60, "R": -60}}
 
     // Stop robot
     {"CmdID": 61}
+
+    // Scan WiFi
+    {"CmdID": 50}
+    // Connect to WiFi
+    {"CmdID": 51, "Params": {"SSID": "", "PWD": ""}}
+    // Start Wifi as Hotspot
+    {"CmdID": 52}

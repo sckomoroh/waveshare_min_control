@@ -1,20 +1,27 @@
 #include <ArduinoJson.h>
 #include <Wire.h>
 
+#include "BatteryInfoComponent.h"
 #include "Command_ids.h"
 #include "DisplayComponent.h"
 #include "MotorsComponent.h"
 #include "SerialHandler.h"
+#include "WifiComponent.h"
 
 #define S_SCL 33
 #define S_SDA 32
 
 constexpr uint32_t UART_BAUD = 115200;
 constexpr uint16_t LOOP_DELAY = 100;
+constexpr long BATTERY_UPDATE_INTERVAL = 3000;
 
 serial::handler::SerialHandler serialHandler;
 component::motors::MotorsControll motorsControl;
 component::display::DisplayControl displayControl;
+component::battery_info::BatteryInfoMonitor batteryInfoMonitor;
+component::wifi::WifiControl wifiControl;
+
+long lastTimeUpdate = 0;
 
 void setup()
 {
@@ -27,16 +34,35 @@ void setup()
 
     motorsControl.initMotors();
     displayControl.initDisplay();
+    batteryInfoMonitor.setup();
 
     serialHandler.addHandler(MOVE_ROBOT, &motorsControl);
     serialHandler.addHandler(STOP_ROBOT, &motorsControl);
+    serialHandler.addHandler(WIFI_SCAN, &wifiControl);
+    serialHandler.addHandler(WIFI_HOTSPOT, &wifiControl);
+    serialHandler.addHandler(WIFI_CONNECT, &wifiControl);
+
     serialHandler.initSerialHandler();
+    wifiControl.startHotspot();
 }
 
 void loop()
 {
     motorsControl.processMotors();
-    char leftBuffer[256], rightBuffer[256];
+    auto currentMillis = millis();
+    if (currentMillis - lastTimeUpdate > BATTERY_UPDATE_INTERVAL) {
+        lastTimeUpdate = currentMillis;
+        char currentMABuffer[32] = {0};
+        char loadVoltageBuffer[32] = {0};
+        sprintf(currentMABuffer, "Current: %.02f mA", batteryInfoMonitor.getCurrentMA());
+        sprintf(loadVoltageBuffer, "Battery: %.02f V", batteryInfoMonitor.getLoadVoltage());
+        displayControl.setLine(2, currentMABuffer);
+        displayControl.setLine(3, loadVoltageBuffer);
+    }
+
+    char leftBuffer[32] = {0};
+    char rightBuffer[32] = {0};
+
     sprintf(leftBuffer, "Left: %.02f", motorsControl.getLeftPwm());
     sprintf(rightBuffer, "Right: %.02f", motorsControl.getRightPwm());
 
