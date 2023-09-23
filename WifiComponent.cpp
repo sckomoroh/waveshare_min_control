@@ -14,14 +14,18 @@ WifiControl::~WifiControl() { WiFi.disconnect(); }
 void WifiControl::onCommandReceived(uint8_t cmdId, StaticJsonDocument<256> params)
 {
     switch (cmdId) {
-    case WIFI_SCAN:
+    case CMD_WIFI_SCAN:
         scanWifiNetworks();
         break;
-    case WIFI_CONNECT:
+    case CMD_WIFI_CONNECT:
         processConnectToNetwork(params);
         break;
-    case WIFI_HOTSPOT:
+    case CMD_WIFI_HOTSPOT:
         startHotspot();
+        break;
+    case CMD_WIFI_STOP:
+        Serial.println("Stop WiFi");
+        WiFi.disconnect(true);
         break;
     }
 }

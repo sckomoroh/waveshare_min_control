@@ -36,11 +36,15 @@ void setup()
     displayControl.initDisplay();
     batteryInfoMonitor.setup();
 
-    serialHandler.addHandler(MOVE_ROBOT, &motorsControl);
-    serialHandler.addHandler(STOP_ROBOT, &motorsControl);
-    serialHandler.addHandler(WIFI_SCAN, &wifiControl);
-    serialHandler.addHandler(WIFI_HOTSPOT, &wifiControl);
-    serialHandler.addHandler(WIFI_CONNECT, &wifiControl);
+    serialHandler.addHandler(CMD_MOVE_ROBOT, &motorsControl);
+    serialHandler.addHandler(CMD_STOP_ROBOT, &motorsControl);
+    serialHandler.addHandler(CMD_WIFI_SCAN, &wifiControl);
+    serialHandler.addHandler(CMD_WIFI_HOTSPOT, &wifiControl);
+    serialHandler.addHandler(CMD_WIFI_CONNECT, &wifiControl);
+    serialHandler.addHandler(CMD_WIFI_STOP, &wifiControl);
+    serialHandler.addHandler(CMD_CLS_DISPLAY, &displayControl);
+    serialHandler.addHandler(CMD_SET_LINE, &displayControl);
+    serialHandler.addHandler(CMD_SET_LINES, &displayControl);
 
     serialHandler.initSerialHandler();
     wifiControl.startHotspot();
@@ -51,23 +55,23 @@ void loop()
     motorsControl.processMotors();
     auto currentMillis = millis();
     if (currentMillis - lastTimeUpdate > BATTERY_UPDATE_INTERVAL) {
-        lastTimeUpdate = currentMillis;
-        char currentMABuffer[32] = {0};
-        char loadVoltageBuffer[32] = {0};
-        sprintf(currentMABuffer, "Current: %.02f mA", batteryInfoMonitor.getCurrentMA());
-        sprintf(loadVoltageBuffer, "Battery: %.02f V", batteryInfoMonitor.getLoadVoltage());
-        displayControl.setLine(2, currentMABuffer);
-        displayControl.setLine(3, loadVoltageBuffer);
+        // lastTimeUpdate = currentMillis;
+        // char currentMABuffer[32] = {0};
+        // char loadVoltageBuffer[32] = {0};
+        // sprintf(currentMABuffer, "Current: %.02f mA", batteryInfoMonitor.getCurrentMA());
+        // sprintf(loadVoltageBuffer, "Battery: %.02f V", batteryInfoMonitor.getLoadVoltage());
+        // displayControl.setLine(2, currentMABuffer);
+        // displayControl.setLine(3, loadVoltageBuffer);
     }
 
-    char leftBuffer[32] = {0};
-    char rightBuffer[32] = {0};
+    // char leftBuffer[32] = {0};
+    // char rightBuffer[32] = {0};
 
-    sprintf(leftBuffer, "Left: %.02f", motorsControl.getLeftPwm());
-    sprintf(rightBuffer, "Right: %.02f", motorsControl.getRightPwm());
+    // sprintf(leftBuffer, "Left: %.02f", motorsControl.getLeftPwm());
+    // sprintf(rightBuffer, "Right: %.02f", motorsControl.getRightPwm());
 
-    displayControl.setLine(0, leftBuffer);
-    displayControl.setLine(1, rightBuffer);
+    // displayControl.setLine(0, leftBuffer);
+    // displayControl.setLine(1, rightBuffer);
 
     displayControl.updateDisplay();
 

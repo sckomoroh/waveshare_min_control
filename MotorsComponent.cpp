@@ -53,10 +53,10 @@ void MotorsControll::initMotors()
 void MotorsControll::onCommandReceived(uint8_t cmdId, StaticJsonDocument<256> params)
 {
     switch (cmdId) {
-    case MOVE_ROBOT:
+    case CMD_MOVE_ROBOT:
         processMoveRobot(params);
         break;
-    case STOP_ROBOT:
+    case CMD_STOP_ROBOT:
         mLeftPwm = mRightPwm = 0.0;
         break;
     }

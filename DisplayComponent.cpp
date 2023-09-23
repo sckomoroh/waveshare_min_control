@@ -1,5 +1,7 @@
 #include "DisplayComponent.h"
 
+#include "Command_ids.h"
+
 namespace component::display {
 
 constexpr uint8_t SCREEN_WIDTH = 128;
@@ -44,6 +46,50 @@ void DisplayControl::setLine(uint8_t lineNumber, String text)
     }
 
     mLines[lineNumber] = text;
+}
+
+void DisplayControl::onCommandReceived(uint8_t cmdId, StaticJsonDocument<256> params)
+{
+    switch (cmdId) {
+    case CMD_CLS_DISPLAY:
+        processClearDisplay();
+        break;
+    case CMD_SET_LINE:
+        processSetLine(params);
+        break;
+    case CMD_SET_LINES:
+        processSetLines(params);
+        break;
+    }
+}
+
+void DisplayControl::processClearDisplay()
+{
+    mLines[0] = "";
+    mLines[1] = "";
+    mLines[2] = "";
+    mLines[3] = "";
+}
+
+void DisplayControl::processSetLine(StaticJsonDocument<256> params)
+{
+    auto lineNumber = params["Line"].as<uint8_t>();
+    if (lineNumber > 3) {
+        Serial.printf("Max line number is 3 but got %d", lineNumber);
+        return;
+    }
+
+    mLines[lineNumber] = params["Str"].as<String>();
+}
+
+void DisplayControl::processSetLines(StaticJsonDocument<256> params)
+{
+    processClearDisplay();
+    auto lines = params["Lines"].as<JsonArray>();
+    auto count = lines.size() > 4 ? 4 : lines.size();
+    for (int i = 0; i < count; i++) {
+        mLines[i] = lines[i].as<String>();
+    }
 }
 
 }  // namespace component::display

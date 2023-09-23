@@ -1,12 +1,15 @@
-    // Move robot
-    {"CmdID": 60, "Params": {"L": 60, "R": -60}}
+Move commands:
+    Move robot: {"CmdID": 60, "Params": {"L": 60, "R": -60}}
+    Stop robot: {"CmdID": 61}
 
-    // Stop robot
-    {"CmdID": 61}
+WiFi commands:
+    Scan WiFi: {"CmdID": 50}
+    Connect to WiFi: {"CmdID": 51, "Params": {"SSID": "", "PWD": ""}}
+    Start Wifi as Hotspot: {"CmdID": 52}
+    Stop Wifi: {"CmdID": 53}
 
-    // Scan WiFi
-    {"CmdID": 50}
-    // Connect to WiFi
-    {"CmdID": 51, "Params": {"SSID": "", "PWD": ""}}
-    // Start Wifi as Hotspot
-    {"CmdID": 52}
+Display commands:
+    Clear display: {"CmdID" : 40}
+    Set line: {"CmdID" : 41, "Params": {"Line":0, "Str":""}}
+    Set Lines: {"CmdID" : 42, "Params": {"Lines": ["", "", "", ""]}}
+
