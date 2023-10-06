@@ -4,6 +4,7 @@
 #include "BatteryInfoComponent.h"
 #include "Command_ids.h"
 #include "DisplayComponent.h"
+#include "I2CDevice.h"
 #include "MotorsComponent.h"
 #include "SerialHandler.h"
 #include "WifiComponent.h"
@@ -20,6 +21,7 @@ component::motors::MotorsControll motorsControl;
 component::display::DisplayControl displayControl;
 component::battery_info::BatteryInfoMonitor batteryInfoMonitor;
 component::wifi::WifiControl wifiControl;
+component::i2c::I2CDevice i2cDevice;
 
 long lastTimeUpdate = 0;
 
@@ -38,16 +40,22 @@ void setup()
 
     serialHandler.addHandler(CMD_MOVE_ROBOT, &motorsControl);
     serialHandler.addHandler(CMD_STOP_ROBOT, &motorsControl);
+    serialHandler.addHandler(CMD_GET_ENC_VALUES, &motorsControl);
+
     serialHandler.addHandler(CMD_WIFI_SCAN, &wifiControl);
     serialHandler.addHandler(CMD_WIFI_HOTSPOT, &wifiControl);
     serialHandler.addHandler(CMD_WIFI_CONNECT, &wifiControl);
     serialHandler.addHandler(CMD_WIFI_STOP, &wifiControl);
+
     serialHandler.addHandler(CMD_CLS_DISPLAY, &displayControl);
     serialHandler.addHandler(CMD_SET_LINE, &displayControl);
     serialHandler.addHandler(CMD_SET_LINES, &displayControl);
 
+    serialHandler.addHandler(CMD_I2C_READ, &i2cDevice);
+    serialHandler.addHandler(CMD_I2C_WRITE, &i2cDevice);
+
     serialHandler.initSerialHandler();
-    wifiControl.startHotspot();
+    // wifiControl.startHotspot();
 }
 
 void loop()

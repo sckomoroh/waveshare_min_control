@@ -4,6 +4,8 @@
 
 namespace component::motors {
 
+constexpr const char* JSON_RESPONSE_TEMPLATE = "{'Left': %ld, 'Right': %ld}\n";
+
 constexpr uint16_t PWMA = 25;  // Motor A PWM control  Orange
 constexpr uint16_t AIN2 = 17;  // Motor A input 2      Brown
 constexpr uint16_t AIN1 = 21;  // Motor A input 1      Green
@@ -22,12 +24,36 @@ const uint16_t BENCA = 27;
 const uint16_t AENCA = 35;  // Encoder A input      Yellow
 const uint16_t AENCB = 34;
 
-void IRAM_ATTR right_wheel_pulse() {}
+volatile std::atomic<long> MotorsControll::mLeftPulseCount;
+volatile std::atomic<long> MotorsControll::mRightPulseCount;
 
-void IRAM_ATTR left_wheel_pulse() {}
+void IRAM_ATTR MotorsControll::handleLeftPulse()
+{
+    auto direction = digitalRead(AENCA);
+    if (direction) {
+        mLeftPulseCount++;
+    }
+    else {
+        mLeftPulseCount--;
+    }
+}
+
+void IRAM_ATTR MotorsControll::handleRightPulse()
+{
+    auto direction = digitalRead(BENCA);
+    if (direction) {
+        mRightPulseCount--;
+    }
+    else {
+        mRightPulseCount++;
+    }
+}
 
 void MotorsControll::initMotors()
 {
+    mLeftPulseCount.store(0);
+    mRightPulseCount.store(0);
+
     pinMode(AIN1, OUTPUT);
     pinMode(AIN2, OUTPUT);
     pinMode(PWMA, OUTPUT);
@@ -35,8 +61,8 @@ void MotorsControll::initMotors()
     pinMode(BIN2, OUTPUT);
     pinMode(PWMB, OUTPUT);
 
-    attachInterrupt(digitalPinToInterrupt(BENCB), right_wheel_pulse, RISING);
-    attachInterrupt(digitalPinToInterrupt(AENCB), left_wheel_pulse, RISING);
+    attachInterrupt(digitalPinToInterrupt(AENCB), MotorsControll::handleLeftPulse, RISING);
+    attachInterrupt(digitalPinToInterrupt(BENCB), MotorsControll::handleRightPulse, RISING);
 
     ledcSetup(CHANNEL_A, FREQ, ANALOG_WRITE_BITS);
     ledcAttachPin(PWMA, CHANNEL_A);
@@ -58,6 +84,9 @@ void MotorsControll::onCommandReceived(uint8_t cmdId, StaticJsonDocument<256> pa
         break;
     case CMD_STOP_ROBOT:
         mLeftPwm = mRightPwm = 0.0;
+        break;
+    case CMD_GET_ENC_VALUES:
+        processGetEncodersValues();
         break;
     }
 }
@@ -99,7 +128,7 @@ void MotorsControll::moveMotor(float left, float right)
 
 void MotorsControll::leftMotor(float pwm)
 {
-    int pwmIntA = -round(pwm);
+    int pwmIntA = round(pwm);
     if (pwmIntA > 0) {
         digitalWrite(AIN1, LOW);
         digitalWrite(AIN2, HIGH);
@@ -114,7 +143,7 @@ void MotorsControll::leftMotor(float pwm)
 
 void MotorsControll::rightMotor(float pwm)
 {
-    int pwmIntB = -round(pwm);
+    int pwmIntB = round(pwm);
     if (pwmIntB > 0) {
         digitalWrite(BIN1, LOW);
         digitalWrite(BIN2, HIGH);
@@ -134,6 +163,17 @@ void MotorsControll::stopMotor()
 
     digitalWrite(BIN1, LOW);
     digitalWrite(BIN2, LOW);
+}
+
+void MotorsControll::processGetEncodersValues()
+{
+    auto leftCount = mLeftPulseCount.load();
+    auto rightCount = mRightPulseCount.load();
+
+    mLeftPulseCount.store(0);
+    mRightPulseCount.store(0);
+
+    Serial.printf(JSON_RESPONSE_TEMPLATE, leftCount, rightCount);
 }
 
 }  // namespace component::motors

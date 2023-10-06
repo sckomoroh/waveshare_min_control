@@ -1,6 +1,9 @@
 Move commands:
-    Move robot: {"CmdID": 60, "Params": {"L": 60, "R": -60}}
+    Move robot: 
+        {"CmdID": 60, "Params": {"L": 60, "R": -60}}
+        {"CmdID": 60, "Params": {"L": 60, "R": 60}}
     Stop robot: {"CmdID": 61}
+    Get encoder value: {"CmdID": 62} -> response {"Left": XXX, "Right": XXX}
 
 WiFi commands:
     Scan WiFi: {"CmdID": 50}
@@ -12,4 +15,10 @@ Display commands:
     Clear display: {"CmdID" : 40}
     Set line: {"CmdID" : 41, "Params": {"Line":0, "Str":""}}
     Set Lines: {"CmdID" : 42, "Params": {"Lines": ["", "", "", ""]}}
+
+I2C device commands:
+    read device 
+        {"CmdID" : 70, "Params": {"Reg":1}}
+    write device 
+        {"CmdID" : 71, "Params": {"Reg":1, "Value":0}}
 

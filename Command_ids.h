@@ -11,3 +11,7 @@ constexpr uint8_t CMD_WIFI_STOP = 53;
 
 constexpr uint8_t CMD_MOVE_ROBOT = 60;
 constexpr uint8_t CMD_STOP_ROBOT = 61;
+constexpr uint8_t CMD_GET_ENC_VALUES = 62;
+
+constexpr uint8_t CMD_I2C_READ = 70;
+constexpr uint8_t CMD_I2C_WRITE = 71;
