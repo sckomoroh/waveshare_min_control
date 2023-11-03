@@ -6,6 +6,22 @@
 
 namespace component::wifi {
 
+constexpr const char* JSON_SCAN_RESPONSE_TEMPLATE =
+    R"({"CmdId": %u, "Data":{Networks:[]}}
+)";
+
+constexpr const char* JSON_CONNECT_RESPONSE_TEMPLATE =
+    R"({"CmdId": %u, "Data":{}}
+)";
+
+constexpr const char* JSON_HOTSPOT_RESPONSE_TEMPLATE =
+    R"({"CmdId": %u, "Data":{}}
+)";
+
+constexpr const char* JSON_STOP_RESPONSE_TEMPLATE =
+    R"({"CmdId": %u, "Data":{}}
+)";
+
 constexpr const char* AP_SSID = "WAVE_ROVER";
 constexpr const char* AP_PWD = "12345678";
 
@@ -24,7 +40,6 @@ void WifiControl::onCommandReceived(uint8_t cmdId, StaticJsonDocument<256> param
         startHotspot();
         break;
     case CMD_WIFI_STOP:
-        Serial.println("Stop WiFi");
         WiFi.disconnect(true);
         break;
     }
@@ -40,7 +55,6 @@ void WifiControl::processConnectToNetwork(StaticJsonDocument<256> params)
 
 void WifiControl::scanWifiNetworks()
 {
-    Serial.println("Scanning WiFi...");
     WiFi.disconnect();
     WiFi.mode(WIFI_STA);
     WiFi.disconnect();
@@ -48,18 +62,17 @@ void WifiControl::scanWifiNetworks()
 
     int networkCount = WiFi.scanNetworks();
     if (networkCount < 1) {
-        Serial.println("Networks not found");
         return;
     }
 
     for (auto i = 0; i < networkCount; i++) {
-        Serial.print(i + 1);
-        Serial.print(": ");
-        Serial.print(WiFi.SSID(i));
-        Serial.print(" (");
-        Serial.print(WiFi.RSSI(i));
-        Serial.print(")");
-        Serial.println((WiFi.encryptionType(i) == WIFI_AUTH_OPEN) ? " " : "*");
+        // Serial.print(i + 1);
+        // Serial.print(": ");
+        // Serial.print(WiFi.SSID(i));
+        // Serial.print(" (");
+        // Serial.print(WiFi.RSSI(i));
+        // Serial.print(")");
+        // Serial.println((WiFi.encryptionType(i) == WIFI_AUTH_OPEN) ? " " : "*");
         delay(10);
     }
 
@@ -73,26 +86,18 @@ void WifiControl::scanWifiNetworks()
 
 void WifiControl::startHotspot()
 {
-    Serial.println("Start hotspot");
-
     WiFi.disconnect();
     delay(100);
 
     WiFi.mode(WIFI_STA);
     auto res = WiFi.softAP(AP_SSID, AP_PWD);
     if (res) {
-        Serial.printf("Start hotspot '%s'\n", AP_SSID);
         auto ipAddress = WiFi.softAPIP();
-        Serial.printf("STA IP address: '%s'\n", ipAddress.toString().c_str());
-    }
-    else {
-        Serial.printf("Failed to Start hotspot: '%s'. Error: %d\n", AP_SSID, res);
     }
 }
 
 void WifiControl::connectToNetwork(String ssid, String password)
 {
-    Serial.printf("Connect to network: '%s'\n", ssid.c_str());
     WiFi.disconnect();
     delay(100);
 
@@ -108,15 +113,10 @@ void WifiControl::connectToNetwork(String ssid, String password)
     }
 
     if (res == WL_CONNECTED) {
-        Serial.printf("Connected to '%s'\n", ssid.c_str());
         auto ipAddress = WiFi.localIP();
-        Serial.printf("STA IP address: '%s'\n", ipAddress.toString().c_str());
 
         mSsid = ssid;
         mPassword = password;
-    }
-    else {
-        Serial.printf("Failed to connect to network: '%s'. Error: %d\n", ssid.c_str(), res);
     }
 }
 

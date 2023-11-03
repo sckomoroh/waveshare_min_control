@@ -1,27 +1,38 @@
 #include <ArduinoJson.h>
 #include <Wire.h>
 
-#include "BatteryInfoComponent.h"
+// #include "BatteryInfoComponent.h"
 #include "Command_ids.h"
-#include "DisplayComponent.h"
+// #include "DisplayComponent.h"
 #include "I2CDevice.h"
 #include "MotorsComponent.h"
+#include "QMI8658.h"
 #include "SerialHandler.h"
 #include "WifiComponent.h"
+#include "WifiLogger.h"
 
 #define S_SCL 33
 #define S_SDA 32
 
 constexpr uint32_t UART_BAUD = 115200;
-constexpr uint16_t LOOP_DELAY = 100;
+constexpr uint16_t LOOP_DELAY = 10;
 constexpr long BATTERY_UPDATE_INTERVAL = 3000;
 
-serial::handler::SerialHandler serialHandler;
-component::motors::MotorsControll motorsControl;
-component::display::DisplayControl displayControl;
-component::battery_info::BatteryInfoMonitor batteryInfoMonitor;
+#define ENABLE_WIFI_LOGS
+
+#ifdef ENABLE_WIFI_LOGS
+component::wifi::logger::WiFiLogger::Ptr logger = new component::wifi::logger::WiFiLogger();
+#else
+component::wifi::logger::WiFiLogger::Ptr logger = new component::wifi::logger::WifiLoggerStub();
+#endif
+
+serial::handler::SerialHandler serialHandler{logger};
+component::motors::MotorsControll motorsControl{logger};
+// component::display::DisplayControl displayControl;
+//  component::battery_info::BatteryInfoMonitor batteryInfoMonitor;
 component::wifi::WifiControl wifiControl;
 component::i2c::I2CDevice i2cDevice;
+component::sensor::qmi8658::Qmi8658 qmi8659;
 
 long lastTimeUpdate = 0;
 
@@ -34,9 +45,10 @@ void setup()
         delay(10);  // 10ms
     }
 
+    qmi8659.setup();
     motorsControl.initMotors();
-    displayControl.initDisplay();
-    batteryInfoMonitor.setup();
+    // displayControl.initDisplay();
+    // batteryInfoMonitor.setup();
 
     serialHandler.addHandler(CMD_MOVE_ROBOT, &motorsControl);
     serialHandler.addHandler(CMD_STOP_ROBOT, &motorsControl);
@@ -47,15 +59,21 @@ void setup()
     serialHandler.addHandler(CMD_WIFI_CONNECT, &wifiControl);
     serialHandler.addHandler(CMD_WIFI_STOP, &wifiControl);
 
-    serialHandler.addHandler(CMD_CLS_DISPLAY, &displayControl);
-    serialHandler.addHandler(CMD_SET_LINE, &displayControl);
-    serialHandler.addHandler(CMD_SET_LINES, &displayControl);
+    // serialHandler.addHandler(CMD_CLS_DISPLAY, &displayControl);
+    // serialHandler.addHandler(CMD_SET_LINE, &displayControl);
+    // serialHandler.addHandler(CMD_SET_LINES, &displayControl);
 
     serialHandler.addHandler(CMD_I2C_READ, &i2cDevice);
     serialHandler.addHandler(CMD_I2C_WRITE, &i2cDevice);
+    serialHandler.addHandler(CMD_I2C_READ_2B, &i2cDevice);
+
+    serialHandler.addHandler(CMD_IMU_DATA, &qmi8659);
 
     serialHandler.initSerialHandler();
-    // wifiControl.startHotspot();
+    // wifiControl.connectToNetwork("cplusplus", "Anna198800");
+    wifiControl.startHotspot();
+
+    logger->startLogger();
 }
 
 void loop()
@@ -81,7 +99,7 @@ void loop()
     // displayControl.setLine(0, leftBuffer);
     // displayControl.setLine(1, rightBuffer);
 
-    displayControl.updateDisplay();
+    // displayControl.updateDisplay();
 
     delay(LOOP_DELAY);
 }

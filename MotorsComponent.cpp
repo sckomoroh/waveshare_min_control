@@ -4,7 +4,17 @@
 
 namespace component::motors {
 
-constexpr const char* JSON_RESPONSE_TEMPLATE = "{'Left': %ld, 'Right': %ld}\n";
+constexpr const char* JSON_RESPONSE_TEMPLATE =
+    R"({"CmdId": %u, "Data":{"Left": %ld, "Right": %ld}}
+)";
+
+constexpr const char* JSON_STOP_RESPONSE_TEMPLATE =
+    R"({"CmdId": %u, "Data":{}}
+)";
+
+constexpr const char* JSON_MOVE_RESPONSE_TEMPLATE =
+    R"({"CmdId": %u, "Data":{}}
+)";
 
 constexpr uint16_t PWMA = 25;  // Motor A PWM control  Orange
 constexpr uint16_t AIN2 = 17;  // Motor A input 2      Brown
@@ -18,41 +28,46 @@ constexpr int CHANNEL_A = 5;
 constexpr int CHANNEL_B = 6;
 constexpr uint16_t ANALOG_WRITE_BITS = 8;
 
-const uint16_t BENCB = 16;  // Encoder B input      Green
-const uint16_t BENCA = 27;
+const uint16_t RIGHT_ENC_INT_PIN = 16;
+const uint16_t RIGHT_ENC_DIR_PIN = 27;
 
-const uint16_t AENCA = 35;  // Encoder A input      Yellow
-const uint16_t AENCB = 34;
+const uint16_t LEFT_ENC_INT_PIN = 35;
+const uint16_t LEFT_ENC_DIR_PIN = 34;
 
-volatile std::atomic<long> MotorsControll::mLeftPulseCount;
-volatile std::atomic<long> MotorsControll::mRightPulseCount;
+volatile long MotorsControll::mLeftPulseCount;
+volatile long MotorsControll::mRightPulseCount;
 
-void IRAM_ATTR MotorsControll::handleLeftPulse()
+MotorsControll::MotorsControll(component::wifi::logger::WiFiLogger::Ptr logger)
+    : mLogger{logger}
 {
-    auto direction = digitalRead(AENCA);
+}
+
+void MotorsControll::handleLeftPulse()
+{
+    auto direction = digitalRead(LEFT_ENC_DIR_PIN);
     if (direction) {
-        mLeftPulseCount++;
+        mRightPulseCount++;
     }
     else {
-        mLeftPulseCount--;
+        mRightPulseCount--;
     }
 }
 
-void IRAM_ATTR MotorsControll::handleRightPulse()
+void MotorsControll::handleRightPulse()
 {
-    auto direction = digitalRead(BENCA);
+    auto direction = digitalRead(RIGHT_ENC_DIR_PIN);
     if (direction) {
-        mRightPulseCount--;
+        mLeftPulseCount--;
     }
     else {
-        mRightPulseCount++;
+        mLeftPulseCount++;
     }
 }
 
 void MotorsControll::initMotors()
 {
-    mLeftPulseCount.store(0);
-    mRightPulseCount.store(0);
+    mLeftPulseCount = 0;
+    mRightPulseCount = 0;
 
     pinMode(AIN1, OUTPUT);
     pinMode(AIN2, OUTPUT);
@@ -60,9 +75,15 @@ void MotorsControll::initMotors()
     pinMode(BIN1, OUTPUT);
     pinMode(BIN2, OUTPUT);
     pinMode(PWMB, OUTPUT);
+    pinMode(RIGHT_ENC_DIR_PIN, INPUT_PULLUP);
+    pinMode(LEFT_ENC_DIR_PIN, INPUT_PULLUP);
+    pinMode(LEFT_ENC_INT_PIN, INPUT);
+    pinMode(RIGHT_ENC_INT_PIN, INPUT);
 
-    attachInterrupt(digitalPinToInterrupt(AENCB), MotorsControll::handleLeftPulse, RISING);
-    attachInterrupt(digitalPinToInterrupt(BENCB), MotorsControll::handleRightPulse, RISING);
+    attachInterrupt(digitalPinToInterrupt(LEFT_ENC_INT_PIN), MotorsControll::handleLeftPulse,
+                    RISING);
+    attachInterrupt(digitalPinToInterrupt(RIGHT_ENC_INT_PIN), MotorsControll::handleRightPulse,
+                    RISING);
 
     ledcSetup(CHANNEL_A, FREQ, ANALOG_WRITE_BITS);
     ledcAttachPin(PWMA, CHANNEL_A);
@@ -78,14 +99,18 @@ void MotorsControll::initMotors()
 
 void MotorsControll::onCommandReceived(uint8_t cmdId, StaticJsonDocument<256> params)
 {
+    mLogger->info("Received command: %u", cmdId);
+
     switch (cmdId) {
     case CMD_MOVE_ROBOT:
         processMoveRobot(params);
         break;
     case CMD_STOP_ROBOT:
         mLeftPwm = mRightPwm = 0.0;
+        // Serial.printf(JSON_STOP_RESPONSE_TEMPLATE, CMD_STOP_ROBOT);
         break;
     case CMD_GET_ENC_VALUES:
+        mLogger->info("Start get encoders value");
         processGetEncodersValues();
         break;
     }
@@ -95,19 +120,23 @@ void MotorsControll::processMoveRobot(StaticJsonDocument<256> params)
 {
     auto leftSpeed = params["L"].as<float>();
     auto rightSpeed = params["R"].as<float>();
+    mLogger->info("Process move command: %.02f %.02f", leftSpeed, rightSpeed);
+
     if (abs(leftSpeed) > 255) {
-        Serial.printf("[DEBUG] Incorrect left speed: %.02f\n", leftSpeed);
+        mLogger->info("Incorrect left speed: %.02f\n", leftSpeed);
         return;
     }
 
     if (abs(rightSpeed) > 255) {
-        Serial.printf("[DEBUG] Incorrect right speed speed: %.02f\n", rightSpeed);
+        mLogger->info("Incorrect right speed speed: %.02f\n", rightSpeed);
         return;
     }
 
-    Serial.printf("[DEBUG] Command move robot. Left: %.02f Right: %.02f\n", leftSpeed, rightSpeed);
+    mLogger->info("Command move robot. Left: %.02f Right: %.02f\n", leftSpeed, rightSpeed);
     mLeftPwm = leftSpeed;
     mRightPwm = rightSpeed;
+
+    // Serial.printf(JSON_MOVE_RESPONSE_TEMPLATE, CMD_MOVE_ROBOT);
 }
 
 void MotorsControll::processMotors()
@@ -126,32 +155,32 @@ void MotorsControll::moveMotor(float left, float right)
     rightMotor(right);
 }
 
-void MotorsControll::leftMotor(float pwm)
+void MotorsControll::rightMotor(float pwm)
 {
     int pwmIntA = round(pwm);
     if (pwmIntA > 0) {
-        digitalWrite(AIN1, LOW);
-        digitalWrite(AIN2, HIGH);
+        digitalWrite(AIN1, HIGH);
+        digitalWrite(AIN2, LOW);
         ledcWrite(CHANNEL_A, pwmIntA);
     }
     else {
-        digitalWrite(AIN1, HIGH);
-        digitalWrite(AIN2, LOW);
+        digitalWrite(AIN1, LOW);
+        digitalWrite(AIN2, HIGH);
         ledcWrite(CHANNEL_A, -pwmIntA);
     }
 }
 
-void MotorsControll::rightMotor(float pwm)
+void MotorsControll::leftMotor(float pwm)
 {
     int pwmIntB = round(pwm);
     if (pwmIntB > 0) {
-        digitalWrite(BIN1, LOW);
-        digitalWrite(BIN2, HIGH);
+        digitalWrite(BIN1, HIGH);
+        digitalWrite(BIN2, LOW);
         ledcWrite(CHANNEL_B, pwmIntB);
     }
     else {
-        digitalWrite(BIN1, HIGH);
-        digitalWrite(BIN2, LOW);
+        digitalWrite(BIN1, LOW);
+        digitalWrite(BIN2, HIGH);
         ledcWrite(CHANNEL_B, -pwmIntB);
     }
 }
@@ -167,13 +196,13 @@ void MotorsControll::stopMotor()
 
 void MotorsControll::processGetEncodersValues()
 {
-    auto leftCount = mLeftPulseCount.load();
-    auto rightCount = mRightPulseCount.load();
+    auto leftCount = mLeftPulseCount;
+    auto rightCount = mRightPulseCount;
 
-    mLeftPulseCount.store(0);
-    mRightPulseCount.store(0);
+    mLeftPulseCount = 0;
+    mRightPulseCount = 0;
 
-    Serial.printf(JSON_RESPONSE_TEMPLATE, leftCount, rightCount);
+    Serial.printf(JSON_RESPONSE_TEMPLATE, CMD_GET_ENC_VALUES, leftCount, rightCount);
 }
 
 }  // namespace component::motors

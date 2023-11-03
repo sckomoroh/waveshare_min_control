@@ -5,6 +5,8 @@ Move commands:
     Stop robot: {"CmdID": 61}
     Get encoder value: {"CmdID": 62} -> response {"Left": XXX, "Right": XXX}
 
+    {"CmdID": 63, "Params": {"Pin": 0}}
+
 WiFi commands:
     Scan WiFi: {"CmdID": 50}
     Connect to WiFi: {"CmdID": 51, "Params": {"SSID": "", "PWD": ""}}
@@ -17,8 +19,14 @@ Display commands:
     Set Lines: {"CmdID" : 42, "Params": {"Lines": ["", "", "", ""]}}
 
 I2C device commands:
-    read device 
+    read byte 
         {"CmdID" : 70, "Params": {"Reg":1}}
     write device 
         {"CmdID" : 71, "Params": {"Reg":1, "Value":0}}
+    read world
+        {"CmdID" : 72, "Params": {"Reg":1}}
+
+IMU sencor command:
+        {"CmdID" : 80} 
+        -> {"Valid": True, "Accel" : {"X":0, "Y":0, "Z":0}, "Gyro": {"X":0, "Y":0, "Z":0}}
 

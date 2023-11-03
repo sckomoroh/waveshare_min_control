@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SerialHandler.h"
+#include "WifiLogger.h"
 
 namespace component::wifi {
 

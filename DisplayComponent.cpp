@@ -9,6 +9,8 @@ constexpr uint8_t SCREEN_HEIGHT = 32;
 constexpr uint8_t OLED_RESET = -1;
 constexpr uint8_t SCREEN_ADDRESS = 0x3C;
 
+constexpr uint8_t MAX_LINES = 4;
+
 DisplayControl::DisplayControl()
     : mLines(4)
     , mDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET)
@@ -18,7 +20,7 @@ DisplayControl::DisplayControl()
 void DisplayControl::initDisplay()
 {
     if (!mDisplay.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-        Serial.println(F("SSD1306 allocation failed"));
+        //Serial.println(F("SSD1306 allocation failed"));
     }
     mDisplay.clearDisplay();
     mDisplay.display();
@@ -41,8 +43,8 @@ void DisplayControl::updateDisplay()
 
 void DisplayControl::setLine(uint8_t lineNumber, String text)
 {
-    if (lineNumber > 3) {
-        Serial.printf("[ERROR] Line number shall be in range 0-3. You passed: %u\n", lineNumber);
+    if (lineNumber > MAX_LINES - 1) {
+        //Serial.printf("[ERROR] Line number shall be in range 0-3. You passed: %u\n", lineNumber);
     }
 
     mLines[lineNumber] = text;
@@ -74,8 +76,8 @@ void DisplayControl::processClearDisplay()
 void DisplayControl::processSetLine(StaticJsonDocument<256> params)
 {
     auto lineNumber = params["Line"].as<uint8_t>();
-    if (lineNumber > 3) {
-        Serial.printf("Max line number is 3 but got %d", lineNumber);
+    if (lineNumber > MAX_LINES - 1) {
+        //Serial.printf("[WARN ] Max line number is 3 but got %d", lineNumber);
         return;
     }
 
@@ -86,7 +88,7 @@ void DisplayControl::processSetLines(StaticJsonDocument<256> params)
 {
     processClearDisplay();
     auto lines = params["Lines"].as<JsonArray>();
-    auto count = lines.size() > 4 ? 4 : lines.size();
+    auto count = lines.size() > MAX_LINES ? MAX_LINES : lines.size();
     for (int i = 0; i < count; i++) {
         mLines[i] = lines[i].as<String>();
     }

@@ -3,6 +3,7 @@
 namespace serial::handler {
 
 constexpr uint8_t LOOP_DELAY = 5;
+constexpr uint32_t STACK_DEPTH = 4000;
 
 void taskHandler(void* pvParameter)
 {
@@ -14,21 +15,34 @@ void taskHandler(void* pvParameter)
     }
 }
 
+SerialHandler::SerialHandler(component::wifi::logger::WiFiLogger::Ptr logger)
+    : mLogger{logger}
+{
+}
+
 void SerialHandler::initSerialHandler()
 {
-    // TODO: remove magic numbers
-    xTaskCreate(&taskHandler, "serialCtrl", 4000, this, 5, &mSerialCtrlHandle);
+    xTaskCreate(&taskHandler, "serialCtrl", STACK_DEPTH, this, 5, &mSerialCtrlHandle);
 }
 
 void SerialHandler::handlerLoop()
 {
     if (Serial.available()) {
-        DeserializationError err = deserializeJson(mJsonCmdReceive, Serial);
+        String inputString = "";
+        char c = 0;
+        while (Serial.available() && c != 13) {
+            char c = (char)Serial.read();
+            inputString += c;
+        }
+
+        mLogger->info("Receive : '%s'", inputString.c_str());
+
+        DeserializationError err = deserializeJson(mJsonCmdReceive, inputString);
         if (err == DeserializationError::Ok) {
             handleCommand();
         }
         else {
-            // Read noise data
+            mLogger->warn("Failed to deserialize to json incoming data: '%s'", inputString.c_str());
             while (Serial.available() > 0) {
                 Serial.read();
             }
@@ -38,6 +52,7 @@ void SerialHandler::handlerLoop()
 
 void SerialHandler::addHandler(uint8_t cmdId, ISerialCommandHandler* handler)
 {
+    mLogger->info("Handle command: %u", cmdId);
     mHandlers[cmdId].push_back(handler);
 }
 

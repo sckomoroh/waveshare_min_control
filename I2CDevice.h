@@ -10,6 +10,7 @@ private:  // ISerialCommandHandler
 
 private:
     void processReadDevice(StaticJsonDocument<256> params);
+    void processReadWordDevice(StaticJsonDocument<256> params);
     void processWriteDevice(StaticJsonDocument<256> params);
 };
 

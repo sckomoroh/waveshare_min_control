@@ -4,9 +4,11 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
-#include <mutex>
-#include <map>
 #include <list>
+#include <map>
+#include <mutex>
+
+#include "WifiLogger.h"
 
 namespace serial::handler {
 
@@ -25,6 +27,10 @@ private:
     StaticJsonDocument<256> mJsonCmdReceive;
     std::mutex mCmdMutex;
     std::map<uint8_t, std::list<ISerialCommandHandler*>> mHandlers;
+    component::wifi::logger::WiFiLogger::Ptr mLogger;
+    
+public:
+    SerialHandler(component::wifi::logger::WiFiLogger::Ptr logger);
 
 public:
     void initSerialHandler();
@@ -34,7 +40,6 @@ public:
     inline void setNeedStopbool(bool value) { mIsNeedStop = value; }
 
     void addHandler(uint8_t cmdId, ISerialCommandHandler* handler);
-
 
 private:
     void handleCommand();

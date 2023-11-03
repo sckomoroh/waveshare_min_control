@@ -3,15 +3,21 @@
 #include <atomic>
 
 #include "SerialHandler.h"
+#include "WifiLogger.h"
 
 namespace component::motors {
 
 class MotorsControll : public serial::handler::ISerialCommandHandler {
 private:
-    static volatile std::atomic<long> mLeftPulseCount, mRightPulseCount;
+    static volatile long mLeftPulseCount;
+    static volatile long mRightPulseCount;
 
 private:
     float mLeftPwm = 0.0, mRightPwm = 0.0;
+    component::wifi::logger::WiFiLogger::Ptr mLogger;
+
+public:
+    MotorsControll(component::wifi::logger::WiFiLogger::Ptr logger);
 
 public:
     void initMotors();
@@ -30,10 +36,10 @@ private:
     void leftMotor(float pwm);
     void rightMotor(float pwm);
 
+    void processGetEncodersValues();
+
     static void IRAM_ATTR handleLeftPulse();
     static void IRAM_ATTR handleRightPulse();
-
-    void processGetEncodersValues();
 };
 
 }  // namespace component::motors
